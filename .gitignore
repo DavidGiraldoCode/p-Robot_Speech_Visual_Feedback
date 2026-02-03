@@ -1,1 +1,75 @@
-# Ignoring the folloing
+# Ignoring the following
+
+# Standard Python .gitignore file
+
+# Byte-compiled / optimized / DLL files
+
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Setup and build files
+
+/build/
+/dist/
+*.egg-info/
+.coverage
+.tox/
+.mypy_cache/
+.pytest_cache/
+htmlcov/
+nosetests.xml
+coverage.xml
+
+# Virtual environment
+
+# Recommended naming conventions for virtual environments:
+
+# Matches any folder named .venv/
+.venv/  
+
+# Matches a folder named venv/ at the root level
+/venv/  
+
+# Matches a folder named env/ at the root level
+/env/   
+
+# Matches a folder named ENV/ at the root level
+/ENV/   
+
+# Matches any directory named venv
+venv/
+
+# OS/Editor generated files
+
+.DS_Store
+.vscode/
+.idea/
+.history
+Thumbs.db
+
+# PySide/Qt/GUI specific artifacts
+
+# Temporary files generated during resource compilation (.qrc, .ui)
+
+# Note: The QRC file content itself (audio_test.wav) should be committed,
+
+# but the generated C++ or Python code *linking* to it is often ignored.
+
+*.pyc
+*.pyd
+*.moc
+*.qrc
+qrc_*.py
+```
+
+# Ignore environment/config files which hold secrets
+
+.env
+
+# Typical Python files to ignore
+
+**pycache**/
+\*.pyc
+venv/
