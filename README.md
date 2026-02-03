@@ -1,6 +1,34 @@
 # p-Robot_Speech_Visual_Feedback
 
+## 🏗️ Architecture
 
+```bash
+[Furhat Robot] ──WebSocket──► [Python GUI] ──Serial COM──► [Arduino LED]
+                  Audio PCM                   [0,255] values
+```
+
+Flow:
+1. Python GUI connects to Furhat via WebSocket (input Robot IP)
+2. Furhat streams audio continuously
+3. Python processes audio → calculates intensity
+4. Python sends normalized values [0,255] via Serial
+5. Arduino controls LED brightness based on received values
+
+```bash
+Furhat Robot                Python Desktop App              Arduino + LED
+(WS Server)                 (WS Client + Serial)           (Serial Device)
+     │                              │                             │
+     │      (1) User Input Robot IP │                             │
+     │◄──(2) WS Connect Request─────│                             │
+     │                              │                             │
+     │──(3) Audio Stream ──────────►│                             │
+     │    (continuous PCM/WAV)      │──(4) Open Serial Port ─────►│
+     │                              │                             │
+     │──(4) Audio Chunks ──────────►│──(5) Intensity [0,255] ────►│─► 💡 LED
+     │                              │    (post-processed)         │
+     │◄──(5) Close WS ──────────────│                             │
+     │                              │                             │
+```
 
 ## ⚙️ Settup
 
