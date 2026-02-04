@@ -53,7 +53,8 @@ class SerialCom:
             print("SerialCom: cannot send, not connected")
             return False
         try:
-            data = f"{payload}\n".encode("utf-8")
+            # Send as raw byte (0-255) for Arduino PWM
+            data = bytes([int(payload) & 0xFF])
             self._conn.write(data)
             return True
         except Exception as e:

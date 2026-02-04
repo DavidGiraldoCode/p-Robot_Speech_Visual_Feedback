@@ -8,6 +8,8 @@ AppModel: central, thin state holder & coordinator.
 Design choices explained inline.
 """
 import os
+import struct
+import base64
 import numpy as np
 from PySide6.QtCore import QAbstractListModel, Qt, Signal, QTimer
 import asyncio
@@ -55,6 +57,7 @@ class AppModel(QAbstractListModel):
         # The "latest frame" - atomic access via asyncio tasks (controller polls this synchronously)
         # We keep a simple Python attribute protected by minimal invariants (single-writer in model)
         self._latest_ws_package = (0, 0)
+        self._silence_message_printed = False  # Debounce flag for silence detection
 
         # Timer used by the Controller/View for regular UI refresh (polling style)
         self.data_for_draw_calls_updated = QTimer()
@@ -195,11 +198,54 @@ class AppModel(QAbstractListModel):
         """Synchronous read of the latest package (very cheap, single tuple read)."""
         return self._latest_ws_package
 
-    async def audio_stream_handler(self,data):
+    async def audio_stream_handler(self, data):
+        """Process incoming audio data from Furhat WebSocket."""
         base64_audio_data = data.get('speaker')
-    
-        # NEW: Print the raw base64 data fragment
-        print(f"Getting raw (first 30 chars): {base64_audio_data[:30]}...")
+        if not base64_audio_data:
+            return
+
+        # Silence detection: "AAAA..." is base64 for null bytes
+        SILENCE_CHECK_LENGTH = 20
+        is_silent = (len(base64_audio_data) >= SILENCE_CHECK_LENGTH and
+                     base64_audio_data[:SILENCE_CHECK_LENGTH] == 'A' * SILENCE_CHECK_LENGTH)
+
+        if is_silent:
+            if not self._silence_message_printed:
+                print("The robot is not talking")
+                self._silence_message_printed = True
+            self._latest_ws_package = (0.0, 0)
+            return
+
+        # Reset debounce flag when speech resumes and log state change
+        if self._silence_message_printed:
+            print("Is Talking")
+        self._silence_message_printed = False
+
+        try:
+            raw_audio_bytes = base64.b64decode(base64_audio_data)
+
+            # Extract left channel from stereo PCM (16-bit signed, little-endian)
+            l_channel_samples = []
+            for i in range(0, len(raw_audio_bytes) - 3, 4):
+                l_sample = struct.unpack('<h', raw_audio_bytes[i:i+2])[0]
+                l_channel_samples.append(l_sample)
+
+            if not l_channel_samples:
+                return
+
+            # Calculate RMS amplitude
+            sum_of_squares = sum(s**2 for s in l_channel_samples)
+            rms = (sum_of_squares / len(l_channel_samples)) ** 0.5
+
+            # Normalize to 0-255 for Arduino
+            MAX_RMS = 10000.0
+            normalized = min(rms / MAX_RMS, 1.0)
+            intensity_byte = int(normalized * 255)
+
+            self._latest_ws_package = (rms, intensity_byte)
+
+        except Exception as e:
+            print(f"Audio processing error: {e}")
      
 
     # ------------------------------
