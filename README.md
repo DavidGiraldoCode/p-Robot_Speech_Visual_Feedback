@@ -49,7 +49,14 @@ source venv/bin/activate
 
 Install
 ```bash
-pip install numpy scipy os matplotlib numpy pyserial PySide6
+pip install numpy
+pip install scipy
+pip install matplotlib
+pip install pyserial
+pip install PySide6
+pip install qasync
+pip install websockets
+pip install furhat-realtime-api
 ```
 
 Deactivate
@@ -61,3 +68,6 @@ To run it
 ```bash
 python3 main.py
 ```
+
+## 📚 References
+1. [Realtime API Python client for Furhat](https://docs.furhat.io/realtime-api/python_client) 

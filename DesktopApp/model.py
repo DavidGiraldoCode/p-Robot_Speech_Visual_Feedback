@@ -91,6 +91,7 @@ class AppModel(QAbstractListModel):
     def get_committed_input_text(self):
         return self._committed_input_text
 
+    """ TO REMOVE
     # Audio loader (Model owns filesystem / library calls)
     def load_audio_samples(self, file_path):
         if wavfile is None:
@@ -109,6 +110,7 @@ class AppModel(QAbstractListModel):
             self._samples = np.array([0], dtype=np.int16)
             self._sample_rate = 44100
             return self._sample_rate, self._samples
+    """
 
     # ------------------------------
     # WebSocket scheduling surface (synchronous helpers)
