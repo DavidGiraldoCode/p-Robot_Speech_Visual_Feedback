@@ -73,3 +73,6 @@ qrc_*.py
 **pycache**/
 \*.pyc
 venv/
+
+#
+CLAUDE.md

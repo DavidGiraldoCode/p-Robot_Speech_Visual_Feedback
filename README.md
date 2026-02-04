@@ -30,7 +30,30 @@ Furhat Robot                Python Desktop App              Arduino + LED
      │                              │                             │
 ```
 
-## ⚙️ Settup
+## 📦 Project Structure
+
+| File | Description |
+|------|-------------|
+| `main.py` | Application entry point - initializes Qt event loop with qasync |
+| `app_controller.py` | Controller - wires View signals to Model, manages UI state |
+| `model.py` | Model - coordinates FurhatClient and SerialCom, processes audio |
+| `view.py` | View - Qt GUI widgets and layout |
+| `furhat_client.py` | WebSocket client for Furhat robot audio streaming |
+| `serial_com.py` | Serial communication with Arduino |
+| `plot_view.py` | Matplotlib canvas for audio intensity visualization |
+
+### Key Classes
+
+| Class | File | Description |
+|-------|------|-------------|
+| `AppController` | app_controller.py | Orchestrates Model-View interaction, handles UI events |
+| `AppModel` | model.py | Central state holder, schedules async tasks, processes audio |
+| `View` | view.py | Main window with connection controls and status display |
+| `FurhatClient` | furhat_client.py | Async WebSocket client for Furhat real-time audio API |
+| `SerialCom` | serial_com.py | Manages serial port connection and data transmission |
+| `AudioIntensityCanvas` | plot_view.py | Real-time audio intensity visualization widget |
+
+## ⚙️ Setup
 
 Change directory to the Python app
 ```bash
@@ -49,7 +72,14 @@ source venv/bin/activate
 
 Install
 ```bash
-pip install numpy scipy os matplotlib numpy pyserial PySide6
+pip install numpy
+pip install scipy
+pip install matplotlib
+pip install pyserial
+pip install PySide6
+pip install qasync
+pip install websockets
+pip install furhat-realtime-api
 ```
 
 Deactivate
@@ -61,3 +91,6 @@ To run it
 ```bash
 python3 main.py
 ```
+
+## 📚 References
+1. [Realtime API Python client for Furhat](https://docs.furhat.io/realtime-api/python_client) 

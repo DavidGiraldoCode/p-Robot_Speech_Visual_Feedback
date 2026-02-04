@@ -1,8 +1,6 @@
 import argparse
 import asyncio
 from furhat_realtime_api import AsyncFurhatClient, Events
-import struct
-import logging
 
 
 class FurhatClient:
@@ -35,14 +33,16 @@ class FurhatClient:
         parser.add_argument("--auth_key", type=str, default=self.auth_key, help="Authentication key for Realtime API")
         args = parser.parse_args()
         self.furhat = AsyncFurhatClient(args.host, auth_key=args.auth_key)
-        self.furhat.set_logging_level(logging.DEBUG) 
+        #self.furhat.set_logging_level(logging.DEBUG) 
 
     async def connect(self):
         try:
             await self.furhat.connect()
             self._is_connected = True
         except Exception as e:
+            self._is_connected = False
             print(e)
+            raise  # Re-raise so caller can handle
 
     async def disconnect(self):
         # TODO: Disconnect Tasks
@@ -82,6 +82,6 @@ class FurhatClient:
             self._is_fectching = False
 
     def add_audio_stream_listeners(self, handler: any):
+        """Register a handler for audio stream events."""
         self.furhat.add_handler(Events.response_audio_data, handler)
-        print(" in Listener")
-    
+
