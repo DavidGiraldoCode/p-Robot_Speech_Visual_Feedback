@@ -9,7 +9,10 @@ Design rationale:
  - Controller should not create asyncio tasks directly except when scheduling model operations that return immediately.
 """
 from PySide6.QtCore import QTimer
-from view import View
+from view import (
+    View, MSG_DEFAULT, MSG_CONNECTED, MSG_FAILED,
+    STATUS_LISTENING, STATUS_STOPPED, STATUS_TALKING, STATUS_QUIET
+)
 from model import AppModel
 from plot_view import AudioIntensityCanvas
 import numpy as np
@@ -51,6 +54,15 @@ class AppController:
         self.model.input_text_cleared.connect(self._on_cleared_signal)
         self.model.async_task_completed.connect(self._on_async_task_completed)
 
+        # WebSocket connection state signals
+        self.model.ws_connection_succeeded.connect(self._on_ws_connected)
+        self.model.ws_connection_failed.connect(self._on_ws_connection_failed)
+        self.model.ws_disconnected.connect(self._on_ws_disconnected)
+
+        # Robot speech state signals
+        self.model.robot_started_talking.connect(self._on_robot_talking)
+        self.model.robot_stopped_talking.connect(self._on_robot_quiet)
+
     # -----------------------
     # UI Event Handlers
     # -----------------------
@@ -61,18 +73,30 @@ class AppController:
         self.view.set_async_status(f"Committed URL: {url_text}")
 
     def _on_ws_connect_clicked(self):
+        # Commit the current URL (or default) before connecting
+        url_text = self.view.get_url_or_default()
+        self.model.set_committed_input_text(url_text)
+
         # Schedule connect/disconnect
         result = self.model.schedule_ws_connect_toggle()
         self.view.set_async_status(str(result))
 
     def _on_ws_fetch_clicked(self):
+        # Check state BEFORE toggle to determine what will happen
+        was_fetching = self.model.furhat_client and self.model.furhat_client.is_fetching
+
         # Start/stop fetching; ensure connected first
         ok = self.model.schedule_ws_data_toggle()
         if ok:
-            self.view.set_async_status("WS fetch toggled.")
+            # If was fetching, we're now stopping. If wasn't, we're now starting.
+            will_be_fetching = not was_fetching
+            self.view.set_listening_state(will_be_fetching)
+            self.view.set_async_status(STATUS_LISTENING if will_be_fetching else STATUS_STOPPED)
             # ensure the UI poll timer is active to refresh plot
-            if not self._poll_timer.isActive():
+            if will_be_fetching and not self._poll_timer.isActive():
                 self._poll_timer.start()
+            elif not will_be_fetching and self._poll_timer.isActive():
+                self._poll_timer.stop()
         else:
             self.view.set_async_status("Start WS connect before fetching.")
 
@@ -95,6 +119,38 @@ class AppController:
 
     def _on_async_task_completed(self, message):
         self.view.set_async_status(f"Async: {message}")
+
+    def _on_ws_connected(self):
+        """Handle successful WebSocket connection."""
+        self.view.set_ws_connected_state()
+        self.view.set_system_message(MSG_CONNECTED)
+        url = self.model.get_committed_input_text()
+        self.view.set_async_status(f"Connected to {url}")
+
+    def _on_ws_connection_failed(self, error_message: str):
+        """Handle failed WebSocket connection."""
+        self.view.set_ws_disconnected_state()
+        self.view.set_system_message(MSG_FAILED)
+        self.view.reset_url_input_to_default()
+        self.view.set_async_status(f"Connection failed")
+        print(error_message)
+
+    def _on_ws_disconnected(self):
+        """Handle WebSocket disconnection."""
+        self.view.set_ws_disconnected_state()
+        self.view.set_system_message(MSG_DEFAULT)
+        self.view.set_async_status("Disconnected")
+        # Stop the poll timer if running
+        if self._poll_timer.isActive():
+            self._poll_timer.stop()
+
+    def _on_robot_talking(self):
+        """Handle robot started talking."""
+        self.view.set_async_status(STATUS_TALKING)
+
+    def _on_robot_quiet(self):
+        """Handle robot stopped talking."""
+        self.view.set_async_status(STATUS_QUIET)
 
     # -----------------------
     # Polling / Rendering

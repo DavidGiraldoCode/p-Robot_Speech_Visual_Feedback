@@ -35,6 +35,15 @@ class AppModel(QAbstractListModel):
     input_text_cleared = Signal()
     async_task_completed = Signal(str)
 
+    # WebSocket connection state signals
+    ws_connection_succeeded = Signal()
+    ws_connection_failed = Signal(str)  # error message
+    ws_disconnected = Signal()
+
+    # Robot speech state signals
+    robot_started_talking = Signal()
+    robot_stopped_talking = Signal()
+
     def __init__(self, parent=None):
         super().__init__(parent)
         # UI dropdown options (simple list model)
@@ -50,9 +59,8 @@ class AppModel(QAbstractListModel):
         self._ws_queue = asyncio.Queue()
         self.ws_client = WebSocketClient(WEB_SOCKET_SERVER_URL, self._ws_queue)
 
-        # TODO: Adding Furhat API
-        self.furhat_client = FurhatClient("127.0.0.1","")
-        self.furhat_client.add_audio_stream_listeners(self.audio_stream_handler)
+        # Furhat API - created dynamically on connect with user-specified host
+        self.furhat_client = None
 
         # The "latest frame" - atomic access via asyncio tasks (controller polls this synchronously)
         # We keep a simple Python attribute protected by minimal invariants (single-writer in model)
@@ -94,6 +102,17 @@ class AppModel(QAbstractListModel):
     def get_committed_input_text(self):
         return self._committed_input_text
 
+    def _get_connection_host(self) -> str:
+        """Extract host from committed URL, or return default."""
+        url = self._committed_input_text.strip()
+        if url and url != "N/A":
+            # Handle "ws://host:port" or plain "host" formats
+            if url.startswith("ws://"):
+                url = url[5:]  # Remove "ws://"
+            host = url.split(":")[0]  # Remove port if present
+            return host if host else "127.0.0.1"
+        return "127.0.0.1"
+
     """ TO REMOVE
     # Audio loader (Model owns filesystem / library calls)
     def load_audio_samples(self, file_path):
@@ -124,29 +143,42 @@ class AppModel(QAbstractListModel):
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
+            self.ws_connection_failed.emit("asyncio loop not running")
             return "Error: asyncio loop not running (use qasync.run)."
 
-        """""
-        if self.ws_client.is_connected:
-            loop.create_task(self.ws_client.disconnect())
-            return "WS disconnect scheduled"
-        else:
-            loop.create_task(self.ws_client.connect())
-            return "WS connect scheduled"
-        """""
-
-        # TODO: Adding Furhat connection
-        if self.furhat_client.is_connected:
-            loop.create_task(self.furhat_client.disconnect())
+        if self.furhat_client and self.furhat_client.is_connected:
+            loop.create_task(self._disconnect_furhat())
             return "Furhat disconnect scheduled"
         else:
-            loop.create_task(self.furhat_client.connect())
+            loop.create_task(self._connect_furhat())
             return "Furhat connect scheduled"
+
+    async def _connect_furhat(self):
+        """Connect to Furhat and emit appropriate signal."""
+        host = self._get_connection_host()
+
+        # Create new FurhatClient with user-specified host
+        self.furhat_client = FurhatClient(host, "")
+        self.furhat_client.add_audio_stream_listeners(self.audio_stream_handler)
+
+        try:
+            await self.furhat_client.connect()
+            if self.furhat_client.is_connected:
+                self.ws_connection_succeeded.emit()
+            else:
+                self.ws_connection_failed.emit("Connection failed")
+        except Exception as e:
+            self.ws_connection_failed.emit(str(e))
+
+    async def _disconnect_furhat(self):
+        """Disconnect from Furhat and emit signal."""
+        if self.furhat_client:
+            await self.furhat_client.disconnect()
+        self.ws_disconnected.emit()
 
     def schedule_ws_data_toggle(self):
         """Start/stop the ws fetching loop. Non-blocking. Requires ws connected."""
-        #if not self.ws_client.is_connected:
-        if not self.furhat_client.is_connected:
+        if not self.furhat_client or not self.furhat_client.is_connected:
             print("Model: cannot start fetch; WS not connected.")
             return False
         
@@ -156,7 +188,8 @@ class AppModel(QAbstractListModel):
             return False
         
         if self.furhat_client.is_fetching:
-            self.furhat_client.stop_audio_stream()
+            loop.create_task(self.furhat_client.stop_audio_stream())
+            return True
         else:
             self.furhat_client.start_audio_stream(loop)
             return True
@@ -213,12 +246,14 @@ class AppModel(QAbstractListModel):
             if not self._silence_message_printed:
                 print("The robot is not talking")
                 self._silence_message_printed = True
+                self.robot_stopped_talking.emit()
             self._latest_ws_package = (0.0, 0)
             return
 
         # Reset debounce flag when speech resumes and log state change
         if self._silence_message_printed:
             print("Is Talking")
+            self.robot_started_talking.emit()
         self._silence_message_printed = False
 
         try:
@@ -285,9 +320,10 @@ class AppModel(QAbstractListModel):
             print("Model.shutdown error:", e)
         """
 
-        #TODO Disconnect from listening to input stream
+        # Disconnect from Furhat if connected
         try:
-            self.furhat_client.disconnect()
+            if self.furhat_client:
+                await self.furhat_client.disconnect()
         except Exception as e:
             print("Model.shutdown error:", e)
             

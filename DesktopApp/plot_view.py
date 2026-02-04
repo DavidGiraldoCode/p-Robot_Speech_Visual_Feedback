@@ -25,10 +25,11 @@ class AudioIntensityCanvas(QWidget):
     def init_plot_style_only_normal(self):
         self.ax.clear()
         self.ax.set_facecolor(PLOT_BG_COLOR)
-        self.ax.set_title("Real-Time normalized audio intensity", color='white')
+        self.ax.set_title("Real-time speech intensity", color='white')
         self.ax.set_xticks([0.5])
         self.ax.set_xticklabels(['Normalized'], color='white')
         self.ax.set_ylim(0, 1.1)
+        self.ax.tick_params(axis='y', colors='darkgrey')
         self.ax.grid(axis='y', alpha=0.3, color='gray')
         self.bar_norm = self.ax.bar(0.5, 0, width=0.35)
         self.figure.tight_layout(pad=1.5)
