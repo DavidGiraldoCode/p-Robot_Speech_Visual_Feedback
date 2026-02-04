@@ -5,7 +5,7 @@ Exposes small convenience methods so Controller doesn't manipulate internals dir
 """
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout,
-    QLabel, QPushButton, QComboBox, QLineEdit
+    QLabel, QPushButton, QComboBox, QLineEdit, QFrame
 )
 from PySide6.QtCore import Qt, QSize
 
@@ -33,6 +33,16 @@ STATUS_STOPPED = "Stopped listening."
 STATUS_TALKING = "🗣️ Robot is talking"
 STATUS_QUIET = "🤫 Robot is quiet"
 
+
+def create_divider():
+    """Create a horizontal divider line."""
+    line = QFrame()
+    line.setFrameShape(QFrame.Shape.HLine)
+    line.setFrameShadow(QFrame.Shadow.Sunken)
+    line.setStyleSheet("color: #494949;")
+    return line
+
+
 class View(QMainWindow):
     def __init__(self, model):
         super().__init__()
@@ -56,7 +66,7 @@ class View(QMainWindow):
         self.description_label.setFont(font)
 
 
-        self.text_input_label = QLabel("Input the URL and press ENTER")
+        self.text_input_label = QLabel("Input the robot's IP (or just press Connect for localhost)")
         self.text_input = QLineEdit()
         self.text_input.setPlaceholderText("ws://127.0.0.1:8765")
 
@@ -66,18 +76,33 @@ class View(QMainWindow):
         self.combo_box = QComboBox()
         self.combo_result_label = QLabel("Select Arduino Port")
         self.combo_box.addItems([])  # Controller will populate
+        self.button_stop_arduino = QPushButton("Stop Arduino")
+        self.button_stop_arduino.setEnabled(False)  # Disabled until port selected
 
         self.async_status_label = QLabel("You are disconnected from the robot")
 
-        # Arrange
+        # Arrange - Title section
         self.layout.addWidget(self.description_label)
+        self.layout.addWidget(create_divider())
+        
+        #self.layout.addWidget(create_divider())
+
+        # Connection input section
         self.layout.addWidget(self.text_input_label)
         self.layout.addWidget(self.text_input)
-        self.layout.addWidget(self.async_status_label)
+        #self.layout.addWidget(create_divider())
+
+        # Status & controls section
         self.layout.addWidget(self.button_connect)
-        self.layout.addWidget(self.button_fetch)
+        #self.layout.addWidget(create_divider())
+
+        # Arduino section
         self.layout.addWidget(self.combo_result_label)
         self.layout.addWidget(self.combo_box)
+        self.layout.addWidget(self.async_status_label)
+        self.layout.addWidget(self.button_fetch)
+        self.layout.addWidget(self.button_stop_arduino)
+        self.layout.addWidget(create_divider())
 
         # System Messages section
         self.system_msg_header = QLabel("System Messages")
@@ -106,7 +131,7 @@ class View(QMainWindow):
 
         self._plot_widget = widget
         # for inserting at the end use self.layout.count()
-        self.layout.insertWidget(1, self._plot_widget)
+        self.layout.insertWidget(5, self._plot_widget)
 
     # convenience setters for labels
     def set_combo_result_text(self, text):
@@ -149,3 +174,12 @@ class View(QMainWindow):
     def set_system_message(self, text: str):
         """Update the system message label."""
         self.system_msg_label.setText(text)
+
+    def set_arduino_controls_enabled(self, combo_enabled: bool, button_enabled: bool):
+        """Enable/disable Arduino combo box and stop button."""
+        self.combo_box.setEnabled(combo_enabled)
+        self.button_stop_arduino.setEnabled(button_enabled)
+
+    def reset_arduino_selection(self):
+        """Clear the combo box selection."""
+        self.combo_box.setCurrentIndex(0)  # Select empty option
