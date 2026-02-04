@@ -29,10 +29,10 @@ class SerialCom:
         self.disconnect()
         try:
             self._conn = serial.Serial(port=port_name, baudrate=self._baudrate, timeout=1)
-            print(f"SerialCom: connected to {port_name}")
+            #print(f"SerialCom: connected to {port_name}")
             return True
         except Exception as e:
-            print("SerialCom: connect failed:", e)
+            #print("SerialCom: connect failed:", e)
             self._conn = None
             return False
 
@@ -50,7 +50,7 @@ class SerialCom:
 
     def send(self, payload):
         if not self.is_connected():
-            print("SerialCom: cannot send, not connected")
+            #print("SerialCom: cannot send, not connected")
             return False
         try:
             # Send as raw byte (0-255) for Arduino PWM

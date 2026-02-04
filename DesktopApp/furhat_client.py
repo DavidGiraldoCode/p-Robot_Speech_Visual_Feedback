@@ -36,14 +36,16 @@ class FurhatClient:
         parser.add_argument("--auth_key", type=str, default=self.auth_key, help="Authentication key for Realtime API")
         args = parser.parse_args()
         self.furhat = AsyncFurhatClient(args.host, auth_key=args.auth_key)
-        self.furhat.set_logging_level(logging.DEBUG) 
+        #self.furhat.set_logging_level(logging.DEBUG) 
 
     async def connect(self):
         try:
             await self.furhat.connect()
             self._is_connected = True
         except Exception as e:
+            self._is_connected = False
             print(e)
+            raise  # Re-raise so caller can handle
 
     async def disconnect(self):
         # TODO: Disconnect Tasks
@@ -93,7 +95,7 @@ class FurhatClient:
         base64_audio_data = data.get('speaker')
         
         # NEW: Print the raw base64 data fragment
-        print(f"Getting raw (first 30 chars): {base64_audio_data[:30]}...")
+        #print(f"Getting raw (first 30 chars): {base64_audio_data[:30]}...")
             
         if base64_audio_data:
             try:
@@ -101,7 +103,7 @@ class FurhatClient:
                 raw_audio_bytes = base64.b64decode(base64_audio_data)
                 
                 # Now, raw_audio_bytes is the 16-bit PCM audio you can process
-                print(f"Received audio chunk: {len(raw_audio_bytes)} raw bytes.")
+                #print(f"Received audio chunk: {len(raw_audio_bytes)} raw bytes.")
                 
                 # --- NEW LOGIC: Calculate RMS for Left Channel ---
                 l_channel_samples = []
