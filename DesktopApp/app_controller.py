@@ -101,18 +101,12 @@ class AppController:
     # -----------------------
     def _on_poll_timer_tick(self):
         frame = self.model.get_latest_ws_package_thread_safe()
-        # frame is a tuple (left, right)
         if not frame:
             return
-        left, right = frame
-        # Convert to an absolute amplitude and normalize (example rule)
-        value = (abs(left) + abs(right)) / 2.0
-        normalized = min(value / 30000.0, 1.0)
-        # update plot
+        rms, intensity_byte = frame
+        normalized = intensity_byte / 255.0
         self.plot_widget.plot_frame_intensity_normal(normalized)
-        # optionally send to serial as 0..255
-        rgb = int(normalized * 255)
-        self.model.send_serial_data(rgb)
+        self.model.send_serial_data(intensity_byte)
 
     # -----------------------
     # Public
