@@ -48,6 +48,7 @@ class AppController:
         self.view.button_connect.clicked.connect(self._on_ws_connect_clicked)
         self.view.button_fetch.clicked.connect(self._on_ws_fetch_clicked)
         self.view.combo_box.currentIndexChanged.connect(self._on_combo_changed)
+        self.view.button_stop_arduino.clicked.connect(self._on_stop_arduino_clicked)
 
         # Model signals
         self.model.input_text_commited.connect(self._on_committed_signal)
@@ -92,6 +93,14 @@ class AppController:
             will_be_fetching = not was_fetching
             self.view.set_listening_state(will_be_fetching)
             self.view.set_async_status(STATUS_LISTENING if will_be_fetching else STATUS_STOPPED)
+
+            # Update Arduino controls: disable combo during listening, keep stop button enabled
+            has_arduino = self.view.combo_box.currentText() != ""
+            self.view.set_arduino_controls_enabled(
+                combo_enabled=not will_be_fetching,  # Disable combo during listening
+                button_enabled=has_arduino  # Keep stop button enabled for safe shutdown
+            )
+
             # ensure the UI poll timer is active to refresh plot
             if will_be_fetching and not self._poll_timer.isActive():
                 self._poll_timer.start()
@@ -105,8 +114,25 @@ class AppController:
         self.view.set_combo_result_text(f"Select Arduino Port: {selected}")
         if selected == "":
             self.model.disconnect_serial()
+            self.view.set_arduino_controls_enabled(combo_enabled=True, button_enabled=False)
         else:
             self.model.connect_serial(selected)
+            self.view.set_arduino_controls_enabled(combo_enabled=True, button_enabled=True)
+
+    def _on_stop_arduino_clicked(self):
+        """Safely stop Arduino and clear selection."""
+        # If listening, stop first to prevent data being sent to disconnected port
+        is_listening = self.model.furhat_client and self.model.furhat_client.is_fetching
+        if is_listening:
+            self.model.schedule_ws_data_toggle()  # Stop listening
+            self.view.set_listening_state(False)
+            if self._poll_timer.isActive():
+                self._poll_timer.stop()
+
+        self.model.disconnect_serial()
+        self.view.reset_arduino_selection()
+        self.view.set_arduino_controls_enabled(combo_enabled=True, button_enabled=False)
+        self.view.set_async_status("Arduino disconnected")
 
     # -----------------------
     # Model signal handlers
@@ -143,6 +169,9 @@ class AppController:
         # Stop the poll timer if running
         if self._poll_timer.isActive():
             self._poll_timer.stop()
+        # Re-enable Arduino controls
+        has_arduino = self.view.combo_box.currentText() != ""
+        self.view.set_arduino_controls_enabled(combo_enabled=True, button_enabled=has_arduino)
 
     def _on_robot_talking(self):
         """Handle robot started talking."""
