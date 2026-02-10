@@ -1,5 +1,11 @@
 # Arduino system
 
+## Steps to connect
+1. Connect the Breadboard power supply first, then connect the Arduino to the computer.
+2. Press the button on the Breadboard power supply to start the circuit.
+3. Press the button on the protoboard to start the LED.
+4. If you are using a new Arduino, upload the code inside `p-Robot_Speech_Visual_Feedback/Arduino/s_HRI_audio_wave_NeoPixel/s_HRI_audio_wave_NeoPixel.ino` using the Arduino IDE.
+
 ## Components:
 - Arduino UNO REV3 SMD
 - NeoPixel ring 16 RGB LEDs &oslash;44.5mm

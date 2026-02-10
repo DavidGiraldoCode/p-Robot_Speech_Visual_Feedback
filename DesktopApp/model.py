@@ -102,7 +102,8 @@ class AppModel(QObject):
         host = self._get_connection_host()
 
         # Create new FurhatClient with user-specified host
-        self.furhat_client = FurhatClient(host, "")
+        # TODO: Add a input field to add manually the auth key when connecting 
+        self.furhat_client = FurhatClient(host, "abc")
         self.furhat_client.add_audio_stream_listeners(self.audio_stream_handler)
 
         try:
