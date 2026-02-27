@@ -15,6 +15,9 @@ from serial_com import SerialCom
 from furhat_client import FurhatClient
 
 SERIAL_BAUDRATE = 9600
+        
+# TODO: Add a input field to add manually the auth key when connecting 
+FURHAT_KEY = "abc" # This must match the key on the furhat's real-time configuration
 
 class AppModel(QObject):
     # Signals for view/controller
@@ -102,7 +105,8 @@ class AppModel(QObject):
         host = self._get_connection_host()
 
         # Create new FurhatClient with user-specified host
-        self.furhat_client = FurhatClient(host, "")
+        # TODO: Add a input field to add manually the auth key when connecting 
+        self.furhat_client = FurhatClient(host, FURHAT_KEY)
         self.furhat_client.add_audio_stream_listeners(self.audio_stream_handler)
 
         try:

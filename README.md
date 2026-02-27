@@ -1,5 +1,11 @@
 # p-Robot_Speech_Visual_Feedback
 
+** 📋 TODO: ** Add a password field to allow connection to robots in another network.
+
+## 🪲 Known bugs
+- If you disconnect the Arduino and then connect it back on another port, the Desktop App does not update ports. You will have to restart the app to see the new port in the dropdown list.
+- There is no guarantee that the robot and this Python app are on the same network during use. Therefore, in the Furhat configuration for real-time, add the key "abc" to allow the Python connection from a different network.
+
 ## 🏗️ Architecture
 
 ```bash
