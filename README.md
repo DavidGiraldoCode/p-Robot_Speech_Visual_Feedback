@@ -61,40 +61,15 @@ Furhat Robot                Python Desktop App              Arduino + LED
 
 ## ⚙️ Setup
 
-Change directory to the Python app
-```bash
-cd /DesktopApp
-```
+> For full cross-platform setup instructions (Windows, macOS, common pitfalls), see [INSTALLATION_DETAILS.md](./INSTALLATION_DETAILS.md).
 
-Create virtual environment
+### Quick start (macOS / Linux)
+
 ```bash
+cd DesktopApp
 python3 -m venv venv
-```
-
-Activate virtual environment before installing libraries
-```bash
 source venv/bin/activate
-```
-
-Install
-```bash
-pip install numpy
-pip install scipy
-pip install matplotlib
-pip install pyserial
-pip install PySide6
-pip install qasync
-pip install websockets
-pip install furhat-realtime-api
-```
-
-Deactivate
-```bash
-deactivate
-```
-
-To run it
-```bash
+pip install numpy scipy matplotlib pyserial PySide6 qasync websockets furhat-realtime-api
 python3 main.py
 ```
 
